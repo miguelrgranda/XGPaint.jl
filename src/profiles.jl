@@ -297,7 +297,7 @@ function profile_paint_generic!(m::Enmap{T, 2, Matrix{T}, CarClenshawCurtis{T}},
             θ =  acos(clamp(1 - d² / 2, -one(T), one(T)))
             θ = max(θmin, θ)  # clamp to minimum θ
             m[i,j] += ifelse(θ < θmax, 
-                             T(normalization * (model(θ, Mh, z) - mean)),
+                             T(normalization * (model(θ, Mh, z) - mean)/mean),
                              zero(T))
         end
     end
@@ -356,7 +356,7 @@ function profile_paint_generic!(m::Enmap{T, 2, Matrix{T}, Gnomonic{T}},
             θ =  acos(clamp(1 - d² / 2, -one(T), one(T)))
             θ = max(θmin, θ)  # clamp to minimum θ
             m[i,j] += ifelse(θ < θmax, 
-                             normalization * (model(θ, Mh, z) - mean),
+                             normalization * (model(θ, Mh, z) - mean)/mean,
                              zero(T))
         end
     end
@@ -455,7 +455,7 @@ function profile_paint_generic!(m::HealpixMap{T, RingOrder}, workspace::HealpixR
                 
                 # Add contribution to map
                 m.pixels[global_pix] += ifelse(θ < θmax,
-                                              normalization * (model(θ, Mh, z) - mean),
+                                              normalization * (model(θ, Mh, z) - mean)/mean,
                                               zero(T))
             end
         end
