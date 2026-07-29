@@ -398,40 +398,8 @@ function profile_paint_generic!(m::HealpixMap{T, RingOrder}, workspace::HealpixR
     # Get relevant rings for this disc
     ring_start, ring_end = get_relevant_rings(workspace.res, θ₀, θmax)
     
-    mean = 0
-    npix = 0
-    for ring_idx in ring_start:ring_end
-        # Get pixel ranges on this ring that intersect the disc
-        range1, range2 = get_ring_disc_ranges(workspace, ring_idx, θ₀, ϕ₀, θmax)
-        
-        # Get precomputed ring info
-        first_pixel = workspace.ring_first_pixels[ring_idx]
-
-        # Process both ranges (range2 may be empty for no phi wraparound)
-        for pixel_range in (range1, range2)
-            for pix_idx in pixel_range
-                # Convert ring pixel index to global healpix pixel index
-                global_pix = first_pixel + pix_idx - 1
-                
-                # Get position of this pixel
-                x₁, y₁, z₁ = pix2vecRing(workspace.res, global_pix)
-                
-                # Compute angular distance
-                d² = (x₁ - x₀)^2 + (y₁ - y₀)^2 + (z₁ - z₀)^2
-                θ = acos(clamp(1 - d² / 2, -one(T), one(T)))
-                θ = max(θmin, θ)  # clamp to minimum θ
-                
-                # Add contribution to map
-                if θ < θmax
-                    mean += normalization * model(θ, Mh, z)
-                    npix += 1
-                end
-            end
-        end
-    end
-    mean = mean / npix
-    # println("Mean=", mean)
-    
+    # mean = 0
+    # npix = 0
     # for ring_idx in ring_start:ring_end
     #     # Get pixel ranges on this ring that intersect the disc
     #     range1, range2 = get_ring_disc_ranges(workspace, ring_idx, θ₀, ϕ₀, θmax)
@@ -454,12 +422,48 @@ function profile_paint_generic!(m::HealpixMap{T, RingOrder}, workspace::HealpixR
     #             θ = max(θmin, θ)  # clamp to minimum θ
                 
     #             # Add contribution to map
-    #             m.pixels[global_pix] += ifelse(θ < θmax,
-    #                                           normalization * (model(θ, Mh, z) - mean)/mean,
-    #                                           zero(T))
+    #             if θ < θmax
+    #                 mean += normalization * model(θ, Mh, z)
+    #                 npix += 1
+    #             end
     #         end
     #     end
     # end
+    # mean = mean / npix
+    # println("Mean=", mean)
+    
+    for ring_idx in ring_start:ring_end
+        # Get pixel ranges on this ring that intersect the disc
+        range1, range2 = get_ring_disc_ranges(workspace, ring_idx, θ₀, ϕ₀, θmax)
+        
+        # Get precomputed ring info
+        first_pixel = workspace.ring_first_pixels[ring_idx]
+
+        # Process both ranges (range2 may be empty for no phi wraparound)
+        for pixel_range in (range1, range2)
+            for pix_idx in pixel_range
+                # Convert ring pixel index to global healpix pixel index
+                global_pix = first_pixel + pix_idx - 1
+                
+                # Get position of this pixel
+                x₁, y₁, z₁ = pix2vecRing(workspace.res, global_pix)
+                
+                # Compute angular distance
+                d² = (x₁ - x₀)^2 + (y₁ - y₀)^2 + (z₁ - z₀)^2
+                θ = acos(clamp(1 - d² / 2, -one(T), one(T)))
+                θ = max(θmin, θ)  # clamp to minimum θ
+                
+                # Add contribution to map
+                m.pixels[global_pix] += ifelse(θ < θmax,
+                                              normalization * model(θ, Mh, z),
+                                              zero(T))
+
+                # m.pixels[global_pix] += ifelse(θ < θmax,
+                #                               normalization * (model(θ, Mh, z) - mean)/mean,
+                #                               zero(T))
+            end
+        end
+    end
 end
 
 # fall back to generic profile painter if no specialized painter is defined for the model
