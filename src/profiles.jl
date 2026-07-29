@@ -459,7 +459,7 @@ function profile_paint_generic!(m::HealpixMap{T, RingOrder}, workspace::HealpixR
     #                                           zero(T))
     #         end
     #     end
-    end
+    # end
 end
 
 # fall back to generic profile painter if no specialized painter is defined for the model
