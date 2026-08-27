@@ -514,9 +514,9 @@ end
 
 # paint the the sources in the given range
 function paintrange!(irange::AbstractUnitRange, m, workspace, model, 
-                     masses, redshifts, αs, δs, proj_v_over_c)
+                     masses, redshifts, αs, δs, proj_v_over_c, mult)
     for i in irange
-        θmax = compute_θmax(model, masses[i] * XGPaint.M_sun, redshifts[i])
+        θmax = compute_θmax(model, masses[i] * XGPaint.M_sun, redshifts[i], mult=mult)
         profile_paint!(m, workspace, model, 
             masses[i], redshifts[i], αs[i], δs[i], θmax, proj_v_over_c[i])
     end
@@ -525,20 +525,20 @@ end
 
 # extend general paint! to take in a projected velocity
 function paint!(m, workspace, model, masses, redshifts, αs, δs, proj_v_over_c; 
-        zerobeforepainting=true)
+        zerobeforepainting=true, mult=4)
     zerobeforepainting && _fillzero!(m)
 
     N_sources = length(masses)
     
     if N_sources < 2Threads.nthreads()  # don't thread if there are not many sources
         return paintrange!(1:N_sources, m, workspace, 
-            model, masses, redshifts, αs, δs, proj_v_over_c)
+            model, masses, redshifts, αs, δs, proj_v_over_c, mult)
     end
 
     # Use ChunkSplitters for better load balancing
     Threads.@threads for chunk in chunks(1:N_sources; n=2*Threads.nthreads())
         paintrange!(chunk, m, workspace, 
-            model, masses, redshifts, αs, δs, proj_v_over_c)
+            model, masses, redshifts, αs, δs, proj_v_over_c, mult)
     end
 end
 
