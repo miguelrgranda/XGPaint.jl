@@ -474,13 +474,13 @@ end
 
 
 # paint the the sources in the given range of indices
-function paintrange!(irange::AbstractUnitRange, m, workspace, model, masses, redshifts, αs, δs)
+function paintrange!(irange::AbstractUnitRange, m, workspace, model, masses, redshifts, αs, δs, mult)
     for i in irange
         α₀ = αs[i]
         δ₀ = δs[i]
         Mh = masses[i]
         z = redshifts[i]
-        θmax_ = compute_θmax(model, Mh * XGPaint.M_sun, z)
+        θmax_ = compute_θmax(model, Mh * XGPaint.M_sun, z, mult=mult)
         profile_paint!(m, workspace, model, Mh, z, α₀, δ₀, θmax_)
     end
 end
@@ -491,7 +491,7 @@ _fillzero!(m::HealpixMap) = fill!(m.pixels, zero(eltype(m)))
 
 # paint! is threaded by default
 function paint!(m, workspace, model, masses, redshifts, αs, δs; 
-                zerobeforepainting=true)
+                zerobeforepainting=true, mult=4)
     
     zerobeforepainting && _fillzero!(m)
 
@@ -499,13 +499,13 @@ function paint!(m, workspace, model, masses, redshifts, αs, δs;
     
     if N_sources < 2Threads.nthreads()  # don't thread if there are not many sources
         return paintrange!(1:N_sources, m, workspace, 
-            model, masses, redshifts, αs, δs)
+            model, masses, redshifts, αs, δs, mult)
     end
 
     # Use ChunkSplitters for better load balancing
     Threads.@threads for chunk in chunks(1:N_sources; n=2*Threads.nthreads())
         paintrange!(chunk, m, workspace, 
-            model, masses, redshifts, αs, δs)
+            model, masses, redshifts, αs, δs, mult)
     end
 end
 
